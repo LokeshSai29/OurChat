@@ -1,19 +1,16 @@
-// ⚠️ IMPORTANT: Replace these placeholders with your actual values
-// For MongoDB: Use MongoDB Atlas or local MongoDB instance
-// For JWT_SECRET: Use a strong, random string
+// server/config.js
+require("dotenv").config();
 
 module.exports = {
-  // Replace with your MongoDB connection string
-  // Example: "mongodb+srv://username:password@cluster.mongodb.net/chatdb"
-  MONGODB_URI: "mongodb+srv://lokesh:%40Rajanilokesh963@cluster0.oggelsp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-  
-  // Replace with a strong secret key for JWT signing
-  // Example: "your-super-secret-jwt-key-here"ow
-  JWT_SECRET: "96bf1cab923081e6",
-  
+  // MongoDB connection string (loaded from .env)
+  MONGODB_URI: process.env.MONGODB_URI,
+
+  // JWT secret key (loaded from .env)
+  JWT_SECRET: process.env.JWT_SECRET,
+
   // Server configuration
   PORT: process.env.PORT || 5000,
-  
+
   // CORS configuration
-  CORS_ORIGIN: process.env.CORS_ORIGIN || "http://localhost:3000"
+  CORS_ORIGIN: process.env.CORS_ORIGIN || "http://localhost:3000",
 };
