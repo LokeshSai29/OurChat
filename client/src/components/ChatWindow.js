@@ -17,7 +17,6 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef(null);
   const emojiPickerRef = useRef(null);
-  const inputRef = useRef(null); // <-- Added for input focus
 
   // Fetch messages when contact changes
   useEffect(() => {
@@ -93,40 +92,23 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
     e.preventDefault();
     if (!newMessage.trim() || sending) return;
 
-    const messageToSend = {
-      _id: Date.now().toString(), // temporary unique ID
-      senderId: user._id,
-      message: newMessage.trim(),
-      timestamp: new Date(),
-      isRead: false,
-    };
-
-    // Optimistic UI update
-    setMessages((prev) => [...prev, messageToSend]);
-    setNewMessage('');
-    setShowEmojiPicker(false);
-    inputRef.current?.focus();
-
-    if (socket) {
-      socket.emit('stopTyping', { contactId: contact._id });
-    }
-
     try {
       setSending(true);
+
       const response = await axios.post(`${config.API_URL}/messages/${contact._id}`, {
-        message: messageToSend.message,
+        message: newMessage.trim(),
       });
 
-      // Replace temporary message with server response
-      setMessages((prev) =>
-        prev.map((msg) => (msg._id === messageToSend._id ? response.data.data : msg))
-      );
+      setMessages((prev) => [...prev, response.data.data]);
+      setNewMessage('');
+      setShowEmojiPicker(false);
+
+      if (socket) {
+        socket.emit('stopTyping', { contactId: contact._id });
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
-
-      // Remove temporary message if failed
-      setMessages((prev) => prev.filter((msg) => msg._id !== messageToSend._id));
     } finally {
       setSending(false);
     }
@@ -148,7 +130,6 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
 
   const onEmojiClick = (emojiObject) => {
     setNewMessage((prev) => prev + emojiObject.emoji);
-    inputRef.current?.focus();
   };
 
   const toggleEmojiPicker = () => {
@@ -296,7 +277,6 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
           </button>
 
           <input
-            ref={inputRef} // <-- Added for focus
             type="text"
             value={newMessage}
             onChange={handleTyping}
