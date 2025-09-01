@@ -17,7 +17,8 @@ const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
     origin: config.CORS_ORIGIN,
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
@@ -35,7 +36,7 @@ app.use(express.urlencoded({ extended: true }));
 // Make io available to routes
 app.set('io', io);
 
-// Health check endpoint
+// Health check endpoint (for testing Render deployment)
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
@@ -45,25 +46,16 @@ app.use('/auth', authRoutes);
 app.use('/contacts', contactRoutes);
 app.use('/messages', messageRoutes);
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
-});
-
 // Socket.IO authentication and connection handling
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
-    if (!token) {
-      return next(new Error('Authentication error'));
-    }
+    if (!token) return next(new Error('Authentication error'));
 
     const decoded = jwt.verify(token, config.JWT_SECRET);
     const user = await User.findById(decoded.userId);
-    
-    if (!user) {
-      return next(new Error('User not found'));
-    }
+
+    if (!user) return next(new Error('User not found'));
 
     socket.userId = user._id.toString();
     socket.user = user;
@@ -74,46 +66,37 @@ io.use(async (socket, next) => {
 });
 
 io.on('connection', async (socket) => {
-  console.log(`User connected: ${socket.user.email} (${socket.userId})`);
+  console.log(`✅ User connected: ${socket.user.email} (${socket.userId})`);
 
-  // Store user connection
   connectedUsers.set(socket.userId, socket.id);
-
-  // Join user's personal room
   socket.join(socket.userId);
 
-  // Update user's online status
   await User.findByIdAndUpdate(socket.userId, {
     isOnline: true,
     lastSeen: new Date()
   });
 
-  // Notify contacts that user is online
   socket.broadcast.emit('userOnline', {
     userId: socket.userId,
     user: socket.user.toPublicJSON()
   });
 
-  // Handle disconnect
   socket.on('disconnect', async () => {
-    console.log(`User disconnected: ${socket.user.email} (${socket.userId})`);
-    
+    console.log(`❌ User disconnected: ${socket.user.email} (${socket.userId})`);
+
     connectedUsers.delete(socket.userId);
 
-    // Update user's offline status
     await User.findByIdAndUpdate(socket.userId, {
       isOnline: false,
       lastSeen: new Date()
     });
 
-    // Notify contacts that user is offline
     socket.broadcast.emit('userOffline', {
       userId: socket.userId,
       user: socket.user.toPublicJSON()
     });
   });
 
-  // Handle typing events
   socket.on('typing', (data) => {
     socket.to(data.contactId).emit('userTyping', {
       userId: socket.userId,
@@ -129,29 +112,27 @@ io.on('connection', async (socket) => {
   });
 });
 
-// Connect to MongoDB
+// Connect to MongoDB and start server
 mongoose.connect(config.MONGODB_URI)
   .then(() => {
-    console.log('Connected to MongoDB');
-    
-    // Start server
+    console.log('✅ Connected to MongoDB');
+
     server.listen(config.PORT, () => {
-      console.log(`Server running on port ${config.PORT}`);
-      console.log(`Frontend URL: ${config.CORS_ORIGIN}`);
+      console.log(`🚀 Server running on port ${config.PORT}`);
+      console.log(`🌍 Frontend URL allowed: ${config.CORS_ORIGIN}`);
     });
   })
   .catch((error) => {
-    console.error('MongoDB connection error:', error);
+    console.error('❌ MongoDB connection error:', error);
     process.exit(1);
   });
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
+  console.log('⚠️ SIGTERM received, shutting down gracefully');
   server.close(() => {
-    console.log('Process terminated');
+    console.log('✅ Process terminated');
   });
 });
 
 module.exports = { app, server, io };
-
