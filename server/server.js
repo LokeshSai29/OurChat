@@ -35,6 +35,11 @@ app.use(express.urlencoded({ extended: true }));
 // Make io available to routes
 app.set('io', io);
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', message: 'Server is running' });
+});
+
 // Routes
 app.use('/auth', authRoutes);
 app.use('/contacts', contactRoutes);
