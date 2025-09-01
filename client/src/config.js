@@ -4,10 +4,10 @@
 
 const config = {
   // Replace with your backend API URL
-  API_URL: "http://localhost:5000",
+  API_URL: "https://ourchat-fu0s.onrender.com",
   
   // Socket.IO configuration
-  SOCKET_URL: "http://localhost:5000"
+  SOCKET_URL: "https://ourchat-fu0s.onrender.com"
 };
 
 export default config;
