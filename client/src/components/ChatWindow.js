@@ -14,6 +14,7 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
   const [sending, setSending] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef(null);
   const emojiPickerRef = useRef(null);
@@ -103,6 +104,9 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
       setNewMessage('');
       setShowEmojiPicker(false);
 
+      // Keep input focused after sending
+      inputRef.current?.focus();
+
       if (socket) {
         socket.emit('stopTyping', { contactId: contact._id });
       }
@@ -129,11 +133,26 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
   };
 
   const onEmojiClick = (emojiObject) => {
-    setNewMessage((prev) => prev + emojiObject.emoji);
+    setNewMessage((prev) => {
+      const newText = prev + emojiObject.emoji;
+
+      // Keep input focused and cursor at end
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.selectionStart = inputRef.current.selectionEnd = newText.length;
+        }
+      }, 0);
+
+      return newText;
+    });
   };
 
   const toggleEmojiPicker = () => {
     setShowEmojiPicker(!showEmojiPicker);
+
+    // Focus input when opening picker
+    setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   const formatTime = (timestamp) => {
@@ -277,6 +296,7 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
           </button>
 
           <input
+            ref={inputRef}
             type="text"
             value={newMessage}
             onChange={handleTyping}
