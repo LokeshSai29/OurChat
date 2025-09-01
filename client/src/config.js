@@ -3,12 +3,8 @@
 // For production: "https://your-backend-url.com"
 
 const config = {
-  // Replace with your backend API URL
-  API_URL: "https://ourchat-fu0s.onrender.com",
-  
-  // Socket.IO configuration
-  SOCKET_URL: "https://ourchat-fu0s.onrender.com"
+  API_URL: "https://ourchatt.onrender.com",
+  SOCKET_URL: "https://ourchatt.onrender.com"
 };
 
 export default config;
-
