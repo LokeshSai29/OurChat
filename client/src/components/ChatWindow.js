@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -13,20 +13,19 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef(null);
   const emojiPickerRef = useRef(null);
 
   // Fetch messages when contact changes
   useEffect(() => {
-    if (contact) {
-      fetchMessages();
-    }
+    if (contact) fetchMessages();
   }, [contact]);
 
-  // Socket event listeners
+  // Socket listeners
   useEffect(() => {
     if (!socket || !contact) return;
 
@@ -68,6 +67,11 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Focus input after messages update
+  useLayoutEffect(() => {
+    inputRef.current?.focus();
+  }, [messages]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -104,12 +108,7 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
       setNewMessage('');
       setShowEmojiPicker(false);
 
-      // Keep input focused after sending
-      inputRef.current?.focus();
-
-      if (socket) {
-        socket.emit('stopTyping', { contactId: contact._id });
-      }
+      if (socket) socket.emit('stopTyping', { contactId: contact._id });
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
@@ -136,7 +135,6 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
     setNewMessage((prev) => {
       const newText = prev + emojiObject.emoji;
 
-      // Keep input focused and cursor at end
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
@@ -151,7 +149,6 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
   const toggleEmojiPicker = () => {
     setShowEmojiPicker(!showEmojiPicker);
 
-    // Focus input when opening picker
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
@@ -242,18 +239,13 @@ const ChatWindow = ({ contact, socket, onContactUpdate }) => {
             <div className="bg-white/10 backdrop-blur-sm text-white px-4 py-3 rounded-2xl border border-white/20">
               <div className="flex items-center space-x-1">
                 <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
-                <div
-                  className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '0.1s' }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '0.2s' }}
-                ></div>
+                <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               </div>
             </div>
           </div>
         )}
+
         <div ref={messagesEndRef} />
       </div>
 
