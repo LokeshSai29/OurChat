@@ -4,6 +4,7 @@ const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 const User = require('./models/User');
 const config = require('./config');
 
@@ -36,17 +37,27 @@ app.use(express.urlencoded({ extended: true }));
 // Make io available to routes
 app.set('io', io);
 
-// Health check endpoint (for testing Render deployment)
+// =========================
+// Root & health routes
+// =========================
+app.get('/', (req, res) => {
+  res.send('✅ OurChat backend is running!');
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
 
-// Routes
+// =========================
+// API Routes
+// =========================
 app.use('/auth', authRoutes);
 app.use('/contacts', contactRoutes);
 app.use('/messages', messageRoutes);
 
-// Socket.IO authentication and connection handling
+// =========================
+// Socket.IO authentication
+// =========================
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
@@ -112,7 +123,22 @@ io.on('connection', async (socket) => {
   });
 });
 
+// =========================
+// Serve frontend (optional)
+// =========================
+const frontendBuildPath = path.join(__dirname, '../client/build');
+app.use(express.static(frontendBuildPath));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendBuildPath, 'index.html'));
+});
+
+
+
+
+// =========================
 // Connect to MongoDB and start server
+// =========================
 mongoose.connect(config.MONGODB_URI)
   .then(() => {
     console.log('✅ Connected to MongoDB');
