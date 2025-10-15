@@ -143,6 +143,10 @@ mongoose.connect(config.MONGODB_URI)
   .then(() => {
     console.log('✅ Connected to MongoDB');
 
+
+
+
+    
     server.listen(config.PORT, () => {
       console.log(`🚀 Server running on port ${config.PORT}`);
       console.log(`🌍 Frontend URL allowed: ${config.CORS_ORIGIN}`);
